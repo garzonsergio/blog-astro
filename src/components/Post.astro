@@ -1,0 +1,111 @@
+---
+// Props interface
+interface Props {
+    documentId: string;
+    publishedAt: string;
+    titular: string;
+    contenido: string;
+    imageUrl?: string;
+    imageAlt?: string;
+}
+
+// Obtener props
+const { documentId, publishedAt, titular, contenido, imageUrl, imageAlt } = Astro.props;
+
+// Formatear fecha
+const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('es-ES', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+    });
+};
+
+const formattedDate = formatDate(publishedAt);
+---
+
+<article class="post">
+    {imageUrl && (
+        <div class="post-image">
+            <img src={imageUrl} alt={imageAlt} loading="lazy" />
+        </div>
+    )}
+    
+    <div class="post-body">
+        <h2 class="post-title">{titular}</h2>
+        <time class="post-date" datetime={publishedAt}>
+            {formattedDate}
+        </time>
+        <div class="post-content" set:html={contenido}></div>
+    </div>
+</article>
+
+<style>
+    .post {
+        border: 1px solid #e0e0e0;
+        border-radius: 8px;
+        margin-bottom: 1.5rem;
+        background: white;
+        overflow: hidden;
+        transition: box-shadow 0.3s ease;
+    }
+    
+    .post:hover {
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    }
+    
+    .post-image {
+        width: 100%;
+        height: 300px;
+        overflow: hidden;
+        background: #f5f5f5;
+    }
+    
+    .post-image img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        transition: transform 0.3s ease;
+    }
+    
+    .post:hover .post-image img {
+        transform: scale(1.05);
+    }
+    
+    .post-body {
+        padding: 1.5rem;
+    }
+    
+    .post-title {
+        font-size: 1.5rem;
+        font-weight: bold;
+        margin: 0 0 0.5rem 0;
+        color: #1976d2;
+        line-height: 1.3;
+    }
+    
+    .post-date {
+        display: block;
+        color: #666;
+        font-size: 0.875rem;
+        margin-bottom: 1rem;
+    }
+    
+    .post-content {
+        line-height: 1.6;
+        color: #333;
+    }
+    
+    .post-content :global(p) {
+        margin-bottom: 1rem;
+    }
+    
+    .post-content :global(p:last-child) {
+        margin-bottom: 0;
+    }
+</style>
+
+<script>
+    console.log(`Post component loaded: ${documentId}`);
+</script>

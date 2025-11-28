@@ -1,0 +1,148 @@
+---
+import Layout from '../layouts/Layout.astro';
+import Post from '../components/Post.astro';
+
+// Interface para los datos de Strapi (tal como vienen de la API)
+interface StrapiImage {
+    id: number;
+    name: string;
+    alternativeText: string;
+    caption: string;
+    width: number;
+    height: number;
+    url: string;
+    formats?: {
+        large?: { url: string };
+        medium?: { url: string };
+        small?: { url: string };
+        thumbnail?: { url: string };
+    };
+}
+
+interface StrapiPost {
+    id: number;
+    documentId: string;
+    createdAt: string;
+    updatedAt: string;
+    publishedAt: string;
+    Titular: string;  // ← Nota: PascalCase en la API
+    Contenido: string; // ← Nota: PascalCase en la API
+    Portada?: StrapiImage; // ← Imagen opcional
+}
+
+interface StrapiResponse {
+    data: StrapiPost[];
+    meta: {
+        pagination: {
+            page: number;
+            pageSize: number;
+            pageCount: number;
+            total: number;
+        }
+    }
+}
+
+// Interface para props del componente
+interface PostData {
+    documentId: string;
+    publishedAt: string;
+    titular: string;
+    contenido: string;
+    imageUrl?: string;
+    imageAlt?: string;
+}
+
+// Fetch de la API
+const url = 'http://localhost:1337/api/noticias?populate=Portada';
+
+let posts: PostData[] = [];
+let error: string | null = null;
+
+try {
+    const response = await fetch(url);
+    if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    const data: StrapiResponse = await response.json();
+    
+    // Mapear los datos de Strapi (PascalCase) a nuestro formato (camelCase)
+    const STRAPI_URL = 'http://localhost:1337';
+    
+    posts = data.data.map((post) => ({
+        documentId: post.documentId,
+        publishedAt: post.publishedAt,
+        titular: post.Titular,  // ← Mapeo de PascalCase a camelCase
+        contenido: post.Contenido, // ← Mapeo de PascalCase a camelCase
+        imageUrl: post.Portada ? `${STRAPI_URL}${post.Portada.formats?.large?.url || post.Portada.url}` : undefined,
+        imageAlt: post.Portada?.alternativeText || post.Titular
+    }));
+    
+    console.log('Posts cargados:', posts.length);
+} catch (e) {
+    error = e instanceof Error ? e.message : 'Error desconocido';
+    console.error('Error fetching posts:', error);
+}
+---
+
+<Layout>
+    <div class="container">
+        
+        
+        <h1 class="page-title">Noticias</h1>
+        
+        {error && (
+            <div class="error-message">
+                <p>Error al cargar las noticias: {error}</p>
+            </div>
+        )}
+        
+        {posts.length === 0 && !error && (
+            <p class="no-posts">No hay noticias disponibles.</p>
+        )}
+        
+        <div class="posts-list">
+            {posts.map((post) => (
+                <Post {...post} />
+            ))}
+        </div>
+    </div>
+</Layout>
+
+<style>
+    .container {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 2rem;
+    }
+    
+    .page-title {
+        font-size: 2.5rem;
+        font-weight: bold;
+        margin-bottom: 2rem;
+        color: #1976d2;
+    }
+    
+    .error-message {
+        padding: 1rem;
+        background: #ffebee;
+        border-left: 4px solid #f44336;
+        border-radius: 4px;
+        margin-bottom: 1rem;
+    }
+    
+    .error-message p {
+        margin: 0;
+        color: #c62828;
+    }
+    
+    .no-posts {
+        color: #666;
+        font-style: italic;
+    }
+    
+    .posts-list {
+        display: flex;
+        flex-direction: column;
+        gap: 1.5rem;
+    }
+</style>
