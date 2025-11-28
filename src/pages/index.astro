@@ -1,11 +1,125 @@
 ---
+import { CurrentLevelChart } from '../components/CurrentLevelChart.tsx';
 import Welcome from '../components/Welcome.astro';
 import Layout from '../layouts/Layout.astro';
 
-// Welcome to Astro! Wondering what to do next? Check out the Astro documentation at https://docs.astro.build
-// Don't want to use any of this? Delete everything in this file, the `assets`, `components`, and `layouts` directories, and start fresh.
+// Interface para los datos de Strapi
+interface NivelData {
+    id: number;
+    documentId: string;
+    createdAt: string;
+    updatedAt: string;
+    publishedAt: string;
+    codigo: string;
+    ubicacion: string;
+    x: number[];
+    y: number[];
+    umbral_amarillo: number;
+    umbral_naranja: number;
+    umbral_rojo: number;
+    offset: number;
+}
+
+interface NivelesResponse {
+    data: NivelData[];
+    meta: {
+        pagination: {
+            page: number;
+            pageSize: number;
+            pageCount: number;
+            total: number;
+        }
+    }
+}
+
+// Fetch de la API
+const url = 'http://localhost:1337/api/nivels';
+
+let niveles: NivelData[] = [];
+let error: string | null = null;
+
+try {
+    const response = await fetch(url);
+    if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    const data: NivelesResponse = await response.json();
+    niveles = data.data;
+    
+    console.log('Niveles cargados:', niveles.length);
+} catch (e) {
+    error = e instanceof Error ? e.message : 'Error desconocido';
+    console.error('Error fetching niveles:', error);
+}
 ---
 
 <Layout>
-	<Welcome />
+    <div class="container">
+        <h1 class="page-title">Niveles Antioquia</h1>
+        
+        {error && (
+            <div class="error-message">
+                <p>Error al cargar los niveles: {error}</p>
+            </div>
+        )}
+        
+        {niveles.length === 0 && !error && (
+            <p class="no-data">No hay datos de niveles disponibles.</p>
+        )}
+        
+        <div class="charts-container">
+            {niveles.map((nivel) => (
+                <div class="chart-wrapper">
+                    <CurrentLevelChart client:only="react" nivel={nivel} />
+                </div>
+            ))}
+        </div>
+    </div>
 </Layout>
+
+<style>
+    .container {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 2rem;
+    }
+    
+    .page-title {
+        font-size: 2.5rem;
+        font-weight: bold;
+        margin-bottom: 2rem;
+        color: #1976d2;
+    }
+    
+    .error-message {
+        padding: 1rem;
+        background: #ffebee;
+        border-left: 4px solid #f44336;
+        border-radius: 4px;
+        margin-bottom: 1rem;
+    }
+    
+    .error-message p {
+        margin: 0;
+        color: #c62828;
+    }
+    
+    .no-data {
+        color: #666;
+        font-style: italic;
+    }
+    
+    .charts-container {
+        display: flex;
+        flex-direction: column;
+        gap: 2rem;
+    }
+    
+    .chart-wrapper {
+        background: white;
+        border: 1px solid #e0e0e0;
+        border-radius: 8px;
+        padding: 1.5rem;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    }
+</style>
