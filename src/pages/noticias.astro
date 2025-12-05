@@ -19,6 +19,20 @@ interface StrapiImage {
     };
 }
 
+interface TextNode {
+    text: string;
+    type: 'text';
+    bold?: boolean;
+    italic?: boolean;
+    underline?: boolean;
+}
+
+interface BlockNode {
+    type: 'paragraph' | 'heading' | 'list' | 'quote';
+    children: TextNode[];
+    level?: number;
+}
+
 interface StrapiPost {
     id: number;
     documentId: string;
@@ -26,7 +40,7 @@ interface StrapiPost {
     updatedAt: string;
     publishedAt: string;
     Titular: string;  // ← Nota: PascalCase en la API
-    Contenido: string; // ← Nota: PascalCase en la API
+    Contenido: BlockNode[] | null; // ← Array de bloques o null
     Portada?: StrapiImage; // ← Imagen opcional
 }
 
@@ -47,7 +61,7 @@ interface PostData {
     documentId: string;
     publishedAt: string;
     titular: string;
-    contenido: string;
+    contenido: BlockNode[] | null;
     imageUrl?: string;
     imageAlt?: string;
 }

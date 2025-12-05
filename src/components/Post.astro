@@ -1,10 +1,25 @@
 ---
+// Tipos para el contenido de Strapi
+interface TextNode {
+    text: string;
+    type: 'text';
+    bold?: boolean;
+    italic?: boolean;
+    underline?: boolean;
+}
+
+interface BlockNode {
+    type: 'paragraph' | 'heading' | 'list' | 'quote';
+    children: TextNode[];
+    level?: number;
+}
+
 // Props interface
 interface Props {
     documentId: string;
     publishedAt: string;
     titular: string;
-    contenido: string;
+    contenido: BlockNode[] | null;
     imageUrl?: string;
     imageAlt?: string;
 }
@@ -22,7 +37,42 @@ const formatDate = (dateString: string) => {
     });
 };
 
+// Convertir bloques de Strapi a HTML
+const renderContent = (content: BlockNode[] | null): string => {
+    // Si es null o undefined, devolver mensaje por defecto
+    if (!content || content.length === 0) {
+        return '<p class="no-content">Contenido no disponible.</p>';
+    }
+
+    // Convertir array de bloques a HTML
+    return content.map((block) => {
+        const textContent = block.children
+            .map((child) => {
+                let text = child.text;
+                if (child.bold) text = `<strong>${text}</strong>`;
+                if (child.italic) text = `<em>${text}</em>`;
+                if (child.underline) text = `<u>${text}</u>`;
+                return text;
+            })
+            .join('');
+
+        switch (block.type) {
+            case 'heading':
+                const level = block.level || 2;
+                return `<h${level}>${textContent}</h${level}>`;
+            case 'quote':
+                return `<blockquote>${textContent}</blockquote>`;
+            case 'list':
+                return `<li>${textContent}</li>`;
+            case 'paragraph':
+            default:
+                return `<p>${textContent}</p>`;
+        }
+    }).join('');
+};
+
 const formattedDate = formatDate(publishedAt);
+const htmlContent = renderContent(contenido);
 ---
 
 <article class="post">
@@ -37,7 +87,7 @@ const formattedDate = formatDate(publishedAt);
         <time class="post-date" datetime={publishedAt}>
             {formattedDate}
         </time>
-        <div class="post-content" set:html={contenido}></div>
+        <div class="post-content" set:html={htmlContent}></div>
     </div>
 </article>
 
@@ -104,8 +154,29 @@ const formattedDate = formatDate(publishedAt);
     .post-content :global(p:last-child) {
         margin-bottom: 0;
     }
+    
+    .post-content :global(.no-content) {
+        color: #999;
+        font-style: italic;
+    }
+    
+    .post-content :global(blockquote) {
+        border-left: 4px solid #1976d2;
+        padding-left: 1rem;
+        margin: 1rem 0;
+        font-style: italic;
+        color: #555;
+    }
+    
+    .post-content :global(strong) {
+        font-weight: 600;
+    }
+    
+    .post-content :global(h2),
+    .post-content :global(h3),
+    .post-content :global(h4) {
+        margin-top: 1.5rem;
+        margin-bottom: 0.75rem;
+        color: #1976d2;
+    }
 </style>
-
-<script>
-    console.log(`Post component loaded: ${documentId}`);
-</script>
